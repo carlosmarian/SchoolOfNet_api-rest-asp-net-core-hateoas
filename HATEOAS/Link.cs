@@ -1,9 +1,13 @@
-namespace SchoolOfNet_api_rest_asp_net_core_hateoas.HEATEOAS
+
+using System.Collections.Generic;
+using System.Linq;
+
+namespace SchoolOfNet_api_rest_asp_net_core_hateoas.HATEOAS
 {
     /***
     Classe que representa os LINKS do HEATEOAS
      */
-    public class Link
+    public class Link 
     {
         public Link(string href, string rel, string method){
             this.href = href;

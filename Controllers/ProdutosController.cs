@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using SchoolOfNet_API_Rest_com_ASPNET_Core_2.Data;
 using SchoolOfNet_API_Rest_com_ASPNET_Core_2.Models;
 using System.Linq;
+using SchoolOfNet_api_rest_asp_net_core_hateoas.HATEOAS;
+using System.Collections.Generic;
 
 namespace SchoolOfNet_API_Rest_com_ASPNET_Core_2.Controllers
 {
@@ -12,24 +14,43 @@ namespace SchoolOfNet_API_Rest_com_ASPNET_Core_2.Controllers
     {
 
         private readonly ApplicationDbContext database;
+        private HATEOAS hateoas;
 
         public ProdutosController(ApplicationDbContext database){
             this.database = database;
+            this.hateoas = new HATEOAS("localhost:5001/api/Produtos");
+            this.hateoas.AddAction("DELETE_PRODUCT", "DELETE");
+            this.hateoas.AddAction("EDIT_PRODUCT", "PATCH");
+            this.hateoas.AddAction("GET_INFO", "GET");
         }
 
         [HttpGet]
         public IActionResult Get(){
             var produtos = database.Produtos.ToList();
-            return Ok(new {msg = "Lista de produtos", body = produtos});
+
+            List<ProdutoContainer> listContainer = new List<ProdutoContainer>();
+            foreach (var produto in produtos)
+            {
+                ProdutoContainer produtoContainer = new ProdutoContainer();
+                produtoContainer.produto = produto;
+                produtoContainer.links = hateoas.GetActions(produto.ID.ToString());
+                listContainer.Add(produtoContainer);
+            }
+
+            return Ok(new {msg = "Lista de produtos", body = listContainer});
         }
 
         [HttpGet("{id}")]
-        public IActionResult PegarProdutos(int id){
+        public IActionResult Get(int id){
             try{
                 var produtos = database.Produtos.First(p => p.ID == id);
-                return Ok(new {msg = "Produto", body = produtos});
+                ProdutoContainer produtoContainer = new ProdutoContainer();
+                produtoContainer.produto = produtos;
+                produtoContainer.links = hateoas.GetActions(produtos.ID.ToString());
+
+                return Ok(produtoContainer);
             }catch(Exception ex){
-                return NotFound(new {msg = "Id invï¿½lido", body = ex});
+                return NotFound(new {msg = "Id inválido", body = ex});
             }            
         }
 
@@ -104,6 +125,12 @@ namespace SchoolOfNet_API_Rest_com_ASPNET_Core_2.Controllers
         public class ProdutoTemp{
             public string Nome { get; set; }
             public float Preco { get; set; }
+        }
+
+        //Definindo um objeto container
+        public class ProdutoContainer{
+            public Produto produto;
+            public Link[] links;
         }
     }
 }
